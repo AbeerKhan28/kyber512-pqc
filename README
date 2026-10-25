@@ -1,0 +1,62 @@
+# pqc-kyber512-rp2350
+**Resource-Efficient ML-KEM-512 (Kyber-512) Implementation on Raspberry Pi Pico 2 W**
+
+This repository contains a high-performance, bare-metal implementation of the **ML-KEM-512 (Kyber-512)** Post-Quantum Cryptographic (PQC) algorithm, specifically optimized for the ARM Cortex-M33 architecture found on the Raspberry Pi Pico 2 W (RP2350). 
+
+Designed as a companion repository for our academic research, this project demonstrates a secure, quantum-resistant key exchange between two networked IoT nodes (Alice and Bob) over Wi-Fi. It integrates constant-time mathematical reductions, global SRAM buffer management, and payload compression to achieve enterprise-grade quantum resistance on highly constrained edge devices.
+
+## 🚀 Key Features
+*   **FIPS 203 Compliant:** Full implementation of NIST's finalized ML-KEM-512 standard, validated against official Cryptographic Algorithm Validation Program (CAVP) Known Answer Tests (KATs).
+*   **Networked IoT Ready:** Real-time peer-to-peer key exchange via TCP/IP utilizing the `lwIP` stack and CYW43 Wi-Fi firmware.
+*   **Constant-Time Execution:** Division-free, branchless Barrett and Montgomery modular reductions engineered to thwart timing side channels.
+*   **TVLA Verified:** Side-channel leakage formally assessed via ISO/IEC 17825 Welch's t-test methodology ($|t| < 4.5$) using over 28,000 hardware `SysTick` traces.
+*   **Bandwidth Optimized:** Implements standard ML-KEM bit-packing to compress polynomials down to exactly 768 bytes, slashing Wi-Fi transmission overhead.
+
+## 📂 File Structure
+
+*   `main(alice).c`: **TCP Server.** Handles Key Generation, transmits Public Key, receives Ciphertext, and Decapsulates.
+*   `main(bob).c`: **TCP Client.** Connects to Server, receives Public Key, Encapsulates, and transmits Ciphertext.
+*   `kyber.c` / `.h`: Core ML-KEM-512 logic (KeyGen, Encaps, Decaps, Implicit Rejection).
+*   `ntt.c` / `.h`: Optimized Number Theoretic Transform (NTT) for fast polynomial multiplication.
+*   `math_utils.c` / `.h`: Division-free Barrett/Montgomery reduction and compression algorithms.
+*   `fips202.c` / `.h`: SHA-3 and SHAKE functions (Hardware TRNG conditioning & PRF expansion).
+*   `aes.c` / `.h`: AES-256 implementation for post-handshake secure data streaming.
+*   `dma_utils.c` / `.h`: Hardware-level DMA configurations for continuous bus masking.
+*   `lwipopts.h`: Optimized configuration for the `lwIP` network stack on the RP2350.
+*   `CMakeLists.txt`: Build configuration for the Pico SDK.
+
+## 🛠️ Setup & Build Instructions
+
+**Hardware Requirements:** 2x Raspberry Pi Pico 2 W boards.
+**Software Requirements:** Raspberry Pi Pico SDK, ARM GCC Toolchain.
+
+1.  **Initialize SDK:** Ensure your `PICO_SDK_PATH` environment variable is set.
+2.  **Configure Network:** Update the `WIFI_SSID` and `WIFI_PASSWORD` macros at the top of `main(alice).c` and `main(bob).c`.
+3.  **Build:**
+    ```bash
+    mkdir build && cd build
+    cmake -G "MinGW Makefiles" ..  # Or "Unix Makefiles" depending on OS
+    make -j4
+    ```
+4.  **Deploy:** Flash `alice.uf2` to the Server Pico and `bob.uf2` to the Client Pico.
+
+## 📊 Performance Benchmarks
+
+Our `-O3` bare-metal C implementation was benchmarked on the RP2350 (Cortex-M33 @ 150 MHz). Execution latencies exclude TCP/IP network overhead to isolate raw cryptographic efficiency.
+
+| Operation | Execution Time (ms) | CPU Clock Cycles |
+| :--- | :--- | :--- |
+| **Key Generation** | 7.88 ms | 1,183,350 |
+| **Encapsulation** | 6.42 ms | 963,300 |
+| **Decapsulation** | 8.29 ms | 1,244,250 |
+
+
+## 🛡️ Advanced Security & Side-Channel Testing
+
+For researchers interested in verifying the side-channel resistance and cryptographic integrity, we provide separate testing harnesses (not enabled in default compilation to preserve memory).
+
+### 1. TVLA (Test Vector Leakage Assessment)
+Follows the ISO/IEC 17825 methodology to prove the absence of secret-dependent timing variations.
+*   **Methodology:** Uses the RP2350's 24-bit core `SysTick` counter running in free-running mode with interrupts disabled (`save_and_disable_interrupts()`) to eliminate RTOS/Network jitter. 
+*   **Execution:** Tests a fixed valid ciphertext (Class A) against uniformly random corrupted ciphertexts (Class B) over $N=28,893$ executions. 
+*   **Result:** The decapsulation routine maintains a Welch's t-statistic of $t = -0.255$, resting comfortably within the $|t| < 4.5$ threshold for strict constant-time execution.
