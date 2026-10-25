@@ -31,7 +31,7 @@ int16_t small_random() {
     return val - 1; // Map 0->-1, 1->0, 2->1
 }
 
-// ... vector_add, vector_sub, vector_copy remain exactly the same
+
 void vector_add(int16_t *a, int16_t *b, int16_t *res, int size) {
     for(int i=0;i<size;i++) res[i] = mod_q(a[i]+b[i]);
 }
@@ -47,7 +47,6 @@ void vector_copy(int16_t *src, int16_t *dst, int size){
 int16_t montgomery_reduce(int32_t t) {
     int16_t m = (int16_t)(t * QINV);      // truncate to 16 bits, signed
     int32_t u = (t - (int32_t)m * Q) >> R_BITS;
-    // result lands in roughly (-Q, Q) — canonicalize with an ADD, not subtract:
     u += Q & (u >> 31);
     return (int16_t)u;
 }
