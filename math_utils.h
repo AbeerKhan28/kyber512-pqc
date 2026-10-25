@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #define Q 3329
-#define N 256  // polynomial degree for Baby Kyber
+#define N 256  
 #define K 2
 
 #define USE_MONTGOMERY 0
