@@ -25,7 +25,7 @@ void dma_copy(int16_t *src,int16_t *dst,int size){
     dma_channel_wait_for_finish_blocking(dma_chan);
 }
 
-// Adding  this
+
 int dma_mask_chan;
 uint32_t dummy_src = 0xDEADBEEF;
 uint32_t dummy_dst = 0;
